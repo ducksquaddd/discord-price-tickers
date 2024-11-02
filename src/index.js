@@ -1,4 +1,3 @@
-// Required dependencies
 const Discord = require("discord.js");
 const https = require("https");
 require("dotenv").config();
@@ -25,13 +24,13 @@ const EthClient = createClient();
  * @param {string} coinId - The ID of the cryptocurrency to fetch
  * @returns {Promise<Object>} Parsed JSON response from CoinGecko
  */
-const fetchCoinData = (coinId) => {
+const fetchCoinData = () => {
   return new Promise((resolve, reject) => {
     const options = {
       hostname: "api.coingecko.com",
-      path: `/api/v3/coins/${coinId}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`,
+      path: `/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,cosmos&sparkline=false`,
       headers: {
-        "x-cg-demo-api-key": COINGECKO_API_KEY,
+        "x-cg-demo-api-key": process.env.CG_API,
       },
     };
 
@@ -57,26 +56,23 @@ const fetchCoinData = (coinId) => {
  */
 const getData = async () => {
   try {
-    // Fetch data for all coins concurrently
-    const [bitcoin, eth, atom] = await Promise.all([
-      fetchCoinData("bitcoin"),
-      fetchCoinData("ethereum"),
-      fetchCoinData("cosmos"),
-    ]);
+    const coins = await fetchCoinData();
 
     // Format the response data
     const result = {
       atom: {
-        price: atom.market_data.current_price.usd,
-        "24h": atom.market_data.price_change_percentage_24h,
+        price: coins.find((c) => c.id === "cosmos").current_price,
+        "24h": coins.find((c) => c.id === "cosmos").price_change_percentage_24h,
       },
       btc: {
-        price: bitcoin.market_data.current_price.usd,
-        "24h": bitcoin.market_data.price_change_percentage_24h,
+        price: coins.find((c) => c.id === "bitcoin").current_price,
+        "24h": coins.find((c) => c.id === "bitcoin")
+          .price_change_percentage_24h,
       },
       eth: {
-        price: eth.market_data.current_price.usd,
-        "24h": eth.market_data.price_change_percentage_24h,
+        price: coins.find((c) => c.id === "ethereum").current_price,
+        "24h": coins.find((c) => c.id === "ethereum")
+          .price_change_percentage_24h,
       },
     };
 
